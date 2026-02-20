@@ -26,18 +26,18 @@ class ModuleNode:
 
     # TODO (@arkid15r): migrate to decorator for consistency.
 
-    id: strawberry.ID
-    key: str
-    name: str
-    description: str
-    domains: list[str] | None = None
-    ended_at: datetime
-    experience_level: ExperienceLevelEnum
-    labels: list[str] | None = None
-    program: ProgramNode | None = None
-    project_id: strawberry.ID | None = None
-    started_at: datetime
-    tags: list[str] | None = None
+    id: strawberry.ID = strawberry.field(name="id", description="The unique identifier of the module.") 
+    key: str = strawberry.field(name="key", description="The unique key of the module.")    
+    description: str = strawberry.field(name="description", description="The description of the module.")
+    domains: list[str] | None = strawberry.field(default=None, name="domains", description="The domains of interest for the module.")
+    ended_at: datetime = strawberry.field(name="endedAt", description="The end date of the module.")
+    experience_level: ExperienceLevelEnum = strawberry.field(name="experienceLevel", description="The experience level of the module.")
+    labels: list[str] | None = strawberry.field(default=None, name="labels", description="The labels associated with the module.")
+    program: ProgramNode | None = strawberry.field(default=None, name="program", description="The program this module belongs to.") 
+    project_id: strawberry.ID | None = strawberry.field(default=None, name="projectId", description="The ID of the project linked to this module.")
+    project_name: str | None = strawberry.field(default=None, name="projectName", description="The name of the project linked to this module.")
+    started_at: datetime = strawberry.field(name="startedAt", description="The start date of the module.")  
+    tags: list[str] | None = strawberry.field(default=None, name="tags", description="The tags associated with the module.") 
 
     @strawberry.field
     def mentors(self) -> list[MentorNode]:
