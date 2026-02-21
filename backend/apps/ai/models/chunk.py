@@ -1,7 +1,7 @@
 """AI app chunk model."""
 
 from django.db import models
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pgvector.django import VectorField
 
 from apps.ai.models.context import Context

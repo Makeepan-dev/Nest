@@ -28,6 +28,12 @@ def get_llm() -> LLM:
             api_key=os.getenv("ANTHROPIC_API_KEY"),
             temperature=0.1,
         )
+    if provider == "gemini":
+        return LLM(
+            model=os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash"),
+            api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.1,
+        )
 
     error_msg = f"Unsupported LLM provider: {provider}"
     raise ValueError(error_msg)

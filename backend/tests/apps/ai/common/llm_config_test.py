@@ -94,7 +94,43 @@ class TestLLMConfig:
             temperature=0.1,
         )
         assert result == mock_llm_instance
+    @patch("apps.ai.common.llm_config.LLM")
+    def test_get_llm_gemini_default(self, mock_llm):
+        """Test getting Gemini LLM with default model."""
+        mock_llm_instance = Mock()
+        mock_llm.return_value = mock_llm_instance
 
+        with patch.dict(os.environ, {"LLM_PROVIDER": "gemini", "GEMINI_API_KEY": "test-gemini-key"}):
+            result = get_llm()
+
+        mock_llm.assert_called_once_with(
+            model="gemini-1.5-flash",
+            api_key="test-gemini-key",
+            temperature=0.1,
+        )
+        assert result == mock_llm_instance
+    @patch.dict(
+            os.environ,
+            {
+                "LLM_PROVIDER": "gemini",
+                "GEMINI_API_KEY": "test-gemini-key",
+                "GEMINI_MODEL_NAME": "gemini-1.5-pro",
+            }
+    )
+    @patch("apps.ai.common.llm_config.LLM")
+    def test_get_llm_gemini_custom_model(self, mock_llm):
+        """Test getting Gemini LLM with custom model."""
+        mock_llm_instance = Mock()
+        mock_llm.return_value = mock_llm_instance
+
+        result = get_llm()
+
+        mock_llm.assert_called_once_with(
+            model="gemini-1.5-pro",
+            api_key="test-gemini-key",
+            temperature=0.1,
+        )
+        assert result == mock_llm_instance
     @patch.dict(os.environ, {"LLM_PROVIDER": "unsupported"})
     def test_get_llm_unsupported_provider(self):
         """Test getting LLM with unsupported provider raises error."""
