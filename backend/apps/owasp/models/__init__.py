@@ -10,5 +10,6 @@ from .post import Post
 from .project import Project
 from .project_health_metrics import ProjectHealthMetrics
 from .project_health_requirements import ProjectHealthRequirements
+from .scrape_log import ScrapeLog
 from .snapshot import Snapshot
 from .sponsor import Sponsor

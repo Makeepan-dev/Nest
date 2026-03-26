@@ -15,6 +15,7 @@ from .member_snapshot import MemberSnapshotAdmin
 from .post import PostAdmin
 from .project import ProjectAdmin
 from .project_health_metrics import ProjectHealthMetricsAdmin
+from .scrape_log import ScrapeLogAdmin
 from .snapshot import SnapshotAdmin
 from .sponsor import SponsorAdmin
 

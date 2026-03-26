@@ -1,8 +1,22 @@
 """OWASP Nest base configuration."""
 
+import multiprocessing
 import os
 import ssl
 from pathlib import Path
+
+if os.name == "nt":
+    # On Windows, 'fork' context is not available.
+    # We monkeypatch multiprocessing to redirect 'fork' requests to 'spawn'.
+    # This allows libraries like django-rq to initialize successfully.
+    _old_get_context = multiprocessing.get_context
+
+    def _patched_get_context(method=None):
+        if method == "fork":
+            method = "spawn"
+        return _old_get_context(method)
+
+    multiprocessing.get_context = _patched_get_context
 
 from configurations import Configuration, values
 

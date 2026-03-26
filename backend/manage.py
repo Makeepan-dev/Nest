@@ -6,6 +6,13 @@ import os
 import sys
 
 if __name__ == "__main__":
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
+
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings.local")
     os.environ.setdefault("DJANGO_CONFIGURATION", "Local")
 

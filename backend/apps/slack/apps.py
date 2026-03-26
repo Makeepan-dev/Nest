@@ -20,6 +20,7 @@ class SlackConfig(AppConfig):
         App(
             signing_secret=settings.SLACK_SIGNING_SECRET,
             token=settings.SLACK_BOT_TOKEN,
+            token_verification_enabled=False,
         )
         if settings.SLACK_BOT_TOKEN != "None" and settings.SLACK_SIGNING_SECRET != "None"  # noqa: S105
         else None

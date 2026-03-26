@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from http import HTTPStatus
 from urllib.parse import urlparse
 
@@ -12,6 +13,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from apps.owasp.models.enums.project import AudienceChoices
+from apps.owasp.models.scrape_log import ScrapeLog
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -38,26 +40,60 @@ class OwaspScraper:
         self.session.mount("http://", http_adapter)  # NOSONAR
         self.session.mount("https://", http_adapter)
 
+        start_time = time.time()
         try:
             page_response = self.session.get(url, timeout=TIMEOUT)
-        except requests.exceptions.RequestException:
+            duration = time.time() - start_time
+
+            if page_response.status_code == HTTPStatus.NOT_FOUND:
+                ScrapeLog.objects.create(
+                    target_url=url,
+                    status="FAILURE",
+                    duration=duration,
+                    error_message="Resource not found (404)",
+                )
+                return
+
+            if page_response.status_code == HTTPStatus.OK:
+                try:
+                    self.page_tree = html.fromstring(page_response.content)
+                    ScrapeLog.objects.create(target_url=url, status="SUCCESS", duration=duration)
+                except etree.ParserError as e:
+                    ScrapeLog.objects.create(
+                        target_url=url,
+                        status="FAILURE",
+                        duration=duration,
+                        error_message=f"Parser error: {e}",
+                    )
+            else:
+                ScrapeLog.objects.create(
+                    target_url=url,
+                    status="FAILURE",
+                    duration=duration,
+                    error_message=f"Request failed with status: {page_response.status_code}",
+                )
+
+        except requests.exceptions.RequestException as e:
+            duration = time.time() - start_time
             logger.exception("Request failed", extra={"url": url})
-            return
-
-        if page_response.status_code == HTTPStatus.NOT_FOUND:
-            return
-
-        try:
-            self.page_tree = html.fromstring(page_response.content)
-        except etree.ParserError:
-            return
+            ScrapeLog.objects.create(
+                target_url=url,
+                status="FAILURE",
+                duration=duration,
+                error_message=f"Request exception: {e}",
+            )
 
     def get_audience(self) -> list[str]:
-        """Return scraped audience."""
+        """Return scraped audience with fallback selectors."""
         if self.page_tree is None:
             return []
 
-        flexible_xpath = "//div[@class='sidebar'] | //*[@role='complementary']"
+        flexible_xpath = (
+            "//div[@class='sidebar'] | "
+            "//*[@role='complementary'] | "
+            "//div[contains(@class, 'project-metadata')] | "
+            "//div[contains(@id, 'sidebar')]"
+        )
         containers = self.page_tree.xpath(flexible_xpath)
 
         found_keywords = set()
@@ -87,15 +123,17 @@ class OwaspScraper:
         return sorted(found_keywords)
 
     def get_urls(self, domain=None):
-        """Return scraped URLs."""
+        """Return scraped URLs with fallback selectors."""
         if self.page_tree is None:
             return set()
 
-        return set(
-            self.page_tree.xpath(f"//div[@class='sidebar']//a[contains(@href, '{domain}')]/@href")
-            if domain is not None
-            else self.page_tree.xpath("//div[@class='sidebar']//a/@href")
-        )
+        #Broaden the search to catch links in sidebars, complementary roles or main content areas
+        xpath_base = "//div[@class='sidebar']//a | //*[@role='complementary']//a | //main//a"
+        if domain is not None:
+            query = f"{xpath_base}[contains(@href, '{domain}')]/@href"
+        else:
+            query = f"{xpath_base}/@href"
+        return set(self.page_tree.xpath(query))
 
     def verify_url(self, url):
         """Verify URL."""
